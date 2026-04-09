@@ -1,3 +1,5 @@
+FROM ghcr.io/astral-sh/uv:0.9.5 AS uv
+
 FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04
 
 ARG PRELOAD_MODEL=1
@@ -8,9 +10,11 @@ ARG BUNDLED_MODEL_DIR=/opt/models/falcon-perception
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_NO_COMPILE=1 \
+    PYTHONPATH=/app \
+    PATH=/app/.venv/bin:/usr/local/bin:$PATH \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_COMPILE_BYTECODE=0 \
     HF_HUB_ENABLE_HF_TRANSFER=1 \
     PYTORCH_ALLOC_CONF=expandable_segments:True \
     PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
@@ -24,9 +28,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 WORKDIR /app
 
+COPY --from=uv /uv /usr/local/bin/uv
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
-    python3-pip \
     ca-certificates \
     libglib2.0-0 \
     libgl1 \
@@ -34,21 +39,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 \
     libxrender1 \
     && ln -sf /usr/bin/python3 /usr/bin/python \
-    && python -m pip install --upgrade pip setuptools wheel \
-    && rm -rf /var/lib/apt/lists/* /root/.cache /tmp/*
+    && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml README.md LICENSE NOTICE /app/
-COPY falcon_perception /app/falcon_perception
-COPY deploy/aliyun_fc /app/deploy/aliyun_fc
+COPY pyproject.toml uv.lock /app/
 
-RUN python -m pip install --no-cache-dir --no-compile --index-url https://download.pytorch.org/whl/cu128 --extra-index-url https://pypi.org/simple "torch>=2.11.0" "torchvision>=0.26.0" \
-    && python -m pip install --no-cache-dir --no-compile --extra-index-url https://pypi.org/simple "huggingface_hub>=0.31.0" ".[server]" \
-    && if [ "${PRELOAD_MODEL}" = "1" ]; then \
+RUN uv sync --locked --no-dev --extra server --no-install-project --python /usr/bin/python3 \
+    && rm -rf /root/.cache /tmp/*
+
+RUN if [ "${PRELOAD_MODEL}" = "1" ]; then \
         python -c "from huggingface_hub import snapshot_download; import os; local_dir=os.environ['BUNDLED_MODEL_DIR']; os.makedirs(local_dir, exist_ok=True); snapshot_download(repo_id=os.environ['HF_MODEL_ID'], repo_type='model', revision=os.environ['HF_REVISION'], local_dir=local_dir, allow_patterns=['model.safetensors', 'config.json', 'tokenizer.json', 'tokenizer_config.json', 'special_tokens_map.json']); print(f'Bundled model downloaded to {local_dir}')"; \
     fi \
-    && find /usr/local -type d -name '__pycache__' -prune -exec rm -rf {} + \
-    && find /usr/local -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete \
     && rm -rf /root/.cache /tmp/*
+
+COPY falcon_perception /app/falcon_perception
+COPY deploy/aliyun_fc/entrypoint.sh /app/deploy/aliyun_fc/entrypoint.sh
+COPY deploy/aliyun_fc/prewarm.py /app/deploy/aliyun_fc/prewarm.py
 
 RUN chmod +x /app/deploy/aliyun_fc/entrypoint.sh \
     && mkdir -p "${IMAGES_DIR}" "${BUNDLED_MODEL_DIR}"
