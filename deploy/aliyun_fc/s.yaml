@@ -45,6 +45,8 @@ resources:
         SERVER_HOST: "0.0.0.0"
         NUM_GPUS: "1"
         DTYPE: "bfloat16"
+        COMPILE: "0"
+        CUDAGRAPH: "0"
         STARTUP_TIMEOUT: "900"
         IMAGES_DIR: "/tmp/falcon-perception/images"
         ENABLE_HR_CACHE: "0"
