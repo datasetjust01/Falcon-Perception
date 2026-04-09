@@ -1,5 +1,10 @@
 FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04
 
+ARG PRELOAD_MODEL=1
+ARG HF_MODEL_ID=tiiuae/Falcon-Perception
+ARG HF_REVISION=main
+ARG BUNDLED_MODEL_DIR=/opt/models/falcon-perception
+
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -12,7 +17,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PORT=7860 \
     NUM_GPUS=1 \
     STARTUP_TIMEOUT=900 \
-    IMAGES_DIR=/tmp/falcon-perception/images
+    IMAGES_DIR=/tmp/falcon-perception/images \
+    BUNDLED_MODEL_DIR=${BUNDLED_MODEL_DIR} \
+    HF_MODEL_ID=${HF_MODEL_ID} \
+    HF_REVISION=${HF_REVISION}
 
 WORKDIR /app
 
@@ -35,12 +43,35 @@ COPY deploy/aliyun_fc /app/deploy/aliyun_fc
 
 RUN python -m pip install --no-cache-dir --no-compile --index-url https://download.pytorch.org/whl/cu128 --extra-index-url https://pypi.org/simple "torch>=2.11.0" "torchvision>=0.26.0" \
     && python -m pip install --no-cache-dir --no-compile --extra-index-url https://pypi.org/simple "huggingface_hub>=0.31.0" ".[server]" \
+    && if [ "${PRELOAD_MODEL}" = "1" ]; then \
+        python - <<'PY'
+from huggingface_hub import snapshot_download
+import os
+
+local_dir = os.environ["BUNDLED_MODEL_DIR"]
+os.makedirs(local_dir, exist_ok=True)
+snapshot_download(
+    repo_id=os.environ["HF_MODEL_ID"],
+    repo_type="model",
+    revision=os.environ["HF_REVISION"],
+    local_dir=local_dir,
+    allow_patterns=[
+        "model.safetensors",
+        "config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "special_tokens_map.json",
+    ],
+)
+print(f"Bundled model downloaded to {local_dir}")
+PY
+    fi \
     && find /usr/local -type d -name '__pycache__' -prune -exec rm -rf {} + \
     && find /usr/local -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete \
     && rm -rf /root/.cache /tmp/*
 
 RUN chmod +x /app/deploy/aliyun_fc/entrypoint.sh \
-    && mkdir -p "${IMAGES_DIR}"
+    && mkdir -p "${IMAGES_DIR}" "${BUNDLED_MODEL_DIR}"
 
 EXPOSE 7860
 

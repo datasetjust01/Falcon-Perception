@@ -16,8 +16,18 @@ STARTUP_TIMEOUT="${STARTUP_TIMEOUT:-900}"
 IMAGES_DIR="${IMAGES_DIR:-/tmp/falcon-perception/images}"
 HF_MODEL_ID="${HF_MODEL_ID:-tiiuae/Falcon-Perception}"
 HF_REVISION="${HF_REVISION:-main}"
+BUNDLED_MODEL_DIR="${BUNDLED_MODEL_DIR:-/opt/models/falcon-perception}"
 
 mkdir -p "${IMAGES_DIR}"
+
+if [[ -n "${HF_LOCAL_DIR:-}" && ! -f "${HF_LOCAL_DIR}/model.safetensors" && -f "${BUNDLED_MODEL_DIR}/model.safetensors" ]]; then
+  echo "[entrypoint] HF_LOCAL_DIR=${HF_LOCAL_DIR} is unavailable, falling back to bundled model"
+  HF_LOCAL_DIR="${BUNDLED_MODEL_DIR}"
+fi
+
+if [[ -z "${HF_LOCAL_DIR:-}" && -f "${BUNDLED_MODEL_DIR}/model.safetensors" ]]; then
+  HF_LOCAL_DIR="${BUNDLED_MODEL_DIR}"
+fi
 
 cmd=(
   python -m falcon_perception.server

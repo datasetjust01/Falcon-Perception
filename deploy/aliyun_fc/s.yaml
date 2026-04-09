@@ -14,6 +14,7 @@ defaults:
   minInstances: 1
   maxInstances: 4
   modelMountDir: /mnt/auto/falcon-perception
+  bundledModelDir: /opt/models/falcon-perception
   nasServerAddr: please-replace-with-your-nas-server:/
   prewarmCommand: python /app/deploy/aliyun_fc/prewarm.py
 
@@ -50,6 +51,7 @@ resources:
         STARTUP_TIMEOUT: "900"
         IMAGES_DIR: "/tmp/falcon-perception/images"
         ENABLE_HR_CACHE: "0"
+        BUNDLED_MODEL_DIR: ${defaults.bundledModelDir}
         HF_LOCAL_DIR: ${defaults.modelMountDir}
         PREWARM_TIMEOUT: "900"
         PREWARM_INTERVAL: "2"
