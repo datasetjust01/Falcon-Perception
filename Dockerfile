@@ -1,9 +1,6 @@
-ARG UV_IMAGE=ghcr.io/astral-sh/uv:0.9.5
-ARG CUDA_BASE_IMAGE=nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04
+FROM ghcr.io/astral-sh/uv:0.9.5 AS uv
 
-FROM ${UV_IMAGE} AS uv
-
-FROM ${CUDA_BASE_IMAGE}
+FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04
 
 ARG PRELOAD_MODEL=1
 ARG HF_MODEL_ID=tiiuae/Falcon-Perception
@@ -23,6 +20,16 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
     PORT=7860 \
     NUM_GPUS=1 \
+    DTYPE=bfloat16 \
+    COMPILE=0 \
+    CUDAGRAPH=0 \
+    ENABLE_HR_CACHE=0 \
+    MAX_BATCH_SIZE=16 \
+    MAX_SEQ_LENGTH=4096 \
+    N_PAGES=256 \
+    PREFILL_LENGTH_LIMIT=8192 \
+    MAX_TOKENS=2048 \
+    MAX_IMAGE_SIZE=768 \
     STARTUP_TIMEOUT=900 \
     IMAGES_DIR=/tmp/falcon-perception/images \
     BUNDLED_MODEL_DIR=${BUNDLED_MODEL_DIR} \
