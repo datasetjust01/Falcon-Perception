@@ -1,0 +1,88 @@
+edition: "3.0.0"
+name: falcon-perception-fc
+access: default
+
+defaults:
+  region: cn-shanghai
+  functionName: falcon-perception-api
+  image: registry.cn-shanghai.aliyuncs.com/your-namespace/falcon-perception-fc:latest
+  gpuType: fc.gpu.tesla.1
+  gpuMemorySize: 24576
+  cpu: 8
+  memorySize: 65536
+  diskSize: 512
+  minInstances: 1
+  maxInstances: 4
+  modelMountDir: /mnt/auto/falcon-perception
+  nasServerAddr: please-replace-with-your-nas-server:/
+  prewarmCommand: python /app/deploy/aliyun_fc/prewarm.py
+
+resources:
+  falconPerceptionGpu:
+    component: fc3
+    props:
+      region: ${defaults.region}
+      functionName: ${defaults.functionName}
+      description: Falcon Perception real-time segmentation API on FC GPU
+      runtime: custom-container
+      timeout: 300
+      cpu: ${defaults.cpu}
+      memorySize: ${defaults.memorySize}
+      diskSize: ${defaults.diskSize}
+      instanceConcurrency: 1
+      internetAccess: true
+      customContainerConfig:
+        image: ${defaults.image}
+        port: 7860
+      gpuConfig:
+        gpuType: ${defaults.gpuType}
+        gpuMemorySize: ${defaults.gpuMemorySize}
+      scaling:
+        minInstances: ${defaults.minInstances}
+        maxInstances: ${defaults.maxInstances}
+      environmentVariables:
+        PORT: "7860"
+        SERVER_HOST: "0.0.0.0"
+        NUM_GPUS: "1"
+        DTYPE: "bfloat16"
+        STARTUP_TIMEOUT: "900"
+        IMAGES_DIR: "/tmp/falcon-perception/images"
+        ENABLE_HR_CACHE: "0"
+        HF_LOCAL_DIR: ${defaults.modelMountDir}
+        PREWARM_TIMEOUT: "900"
+        PREWARM_INTERVAL: "2"
+        PREWARM_REQUEST_TIMEOUT: "120"
+        PREWARM_MIN_IMAGE_SIZE: "64"
+        PREWARM_MAX_IMAGE_SIZE: "64"
+        PREWARM_MAX_TOKENS: "32"
+        FCGPU_RUNTIME_SHMSIZE: "8589934592"
+      triggers:
+        - triggerName: httpTrigger
+          triggerType: http
+          triggerConfig:
+            authType: anonymous
+            methods:
+              - GET
+              - POST
+      nasConfig:
+        userId: 0
+        groupId: 0
+        mountPoints:
+          - serverAddr: ${defaults.nasServerAddr}
+            mountDir: ${defaults.modelMountDir}
+      initializer:
+        enable: true
+        timeout: 900
+        type: RunCommand
+        command: ${defaults.prewarmCommand}
+      logConfig:
+        enableRequestMetrics: true
+        enableInstanceMetrics: true
+
+# 可选：如果你确实需要 VPC/NAS 专线访问，再取消注释并补齐字段。
+#      vpcConfig:
+#        vpcId: vpc-xxxxxxxx
+#        vswitchIds:
+#          - vsw-xxxxxxxx
+#        securityGroupId: sg-xxxxxxxx
+#        enableInternetAccess: true

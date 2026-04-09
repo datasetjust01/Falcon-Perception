@@ -1,0 +1,13 @@
+{
+  "targetTrackingPolicies": [
+    {
+      "name": "falcon-perception-gpu-scaling",
+      "startTime": "2026-04-09T00:00:00.000Z",
+      "endTime": "2026-12-31T23:59:59.000Z",
+      "metricType": "ProvisionedConcurrencyUtilization",
+      "metricTarget": 0.3,
+      "minCapacity": 1,
+      "maxCapacity": 4
+    }
+  ]
+}

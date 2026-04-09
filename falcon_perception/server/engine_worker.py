@@ -230,6 +230,9 @@ def _build_engine(gpu_id, config, log):
             n_pages=config.n_pages,
             page_size=config.page_size,
             prefill_length_limit=config.prefill_length_limit,
+            enable_hr_cache=config.enable_hr_cache,
+            max_hr_cache_entries=config.max_hr_cache_entries,
+            max_image_size=config.max_image_size,
             capture_cudagraph=config.cudagraph,
             max_decode_steps_between_prefills=config.max_decode_steps_between_prefills,
         )

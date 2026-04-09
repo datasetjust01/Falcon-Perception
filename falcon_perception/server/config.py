@@ -47,6 +47,8 @@ class ServerConfig:
     max_decode_steps_between_prefills: int = field(default_factory=lambda: _env_int("MAX_DECODE_STEPS_BETWEEN_PREFILLS", 16))
     temperature: float = field(default_factory=lambda: _env_float("TEMPERATURE", 0.0))
     top_k: int | None = field(default_factory=lambda: _env_int("TOP_K", None) if os.environ.get("TOP_K") else None)
+    enable_hr_cache: bool = field(default_factory=lambda: _env_bool("ENABLE_HR_CACHE", True))
+    max_hr_cache_entries: int = field(default_factory=lambda: _env_int("MAX_HR_CACHE_ENTRIES", 100))
 
     # ── Image defaults ────────────────────────────────────────────────
     min_image_size: int = field(default_factory=lambda: _env_int("MIN_IMAGE_SIZE", 256))

@@ -1,0 +1,17 @@
+.git
+.gitignore
+.codebuddy
+.venv
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.ipynb
+outputs/
+eval/
+assets/
+demo/
+falcon_perception.egg-info/
+uv.lock
+4a432b63388d48f399698529848aa751.png

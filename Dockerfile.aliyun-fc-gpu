@@ -1,0 +1,51 @@
+FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    HF_HUB_ENABLE_HF_TRANSFER=1 \
+    PYTORCH_ALLOC_CONF=expandable_segments:True \
+    PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+    PORT=7860 \
+    NUM_GPUS=1 \
+    STARTUP_TIMEOUT=900 \
+    IMAGES_DIR=/tmp/falcon-perception/images
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-dev \
+    python3-pip \
+    python3-venv \
+    build-essential \
+    git \
+    curl \
+    ca-certificates \
+    libglib2.0-0 \
+    libgl1 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    && ln -sf /usr/bin/python3 /usr/bin/python \
+    && python -m pip install --upgrade pip setuptools wheel \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml README.md LICENSE NOTICE /app/
+COPY falcon_perception /app/falcon_perception
+COPY deploy/aliyun_fc /app/deploy/aliyun_fc
+
+RUN python -m pip install --extra-index-url https://download.pytorch.org/whl/cu128 "torch>=2.11.0" "torchvision>=0.26.0" \
+    && python -m pip install "huggingface_hub>=0.31.0" ".[server]"
+
+RUN chmod +x /app/deploy/aliyun_fc/entrypoint.sh \
+    && mkdir -p "${IMAGES_DIR}"
+
+EXPOSE 7860
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10m --retries=10 \
+    CMD python -c "import json, os, sys, urllib.request as u; data = json.load(u.urlopen('http://127.0.0.1:%s/v1/health' % os.environ.get('PORT', '7860'), timeout=3)); sys.exit(0 if data.get('status') == 'ready' else 1)" || exit 1
+
+ENTRYPOINT ["/app/deploy/aliyun_fc/entrypoint.sh"]
