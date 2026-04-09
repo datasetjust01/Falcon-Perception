@@ -25,7 +25,6 @@ A minimal, readable yet performant PyTorch inference engine implementation of **
 > *"Extract the text content from this image."* → text / latex formulas / html table ... 
 
 
-
 ## Contents
 - [Quick Start](#quick-start)
   - [Installation](#installation)

@@ -1,6 +1,9 @@
-FROM ghcr.io/astral-sh/uv:0.9.5 AS uv
+ARG UV_IMAGE=ghcr.io/astral-sh/uv:0.9.5
+ARG CUDA_BASE_IMAGE=nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04
 
-FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04
+FROM ${UV_IMAGE} AS uv
+
+FROM ${CUDA_BASE_IMAGE}
 
 ARG PRELOAD_MODEL=1
 ARG HF_MODEL_ID=tiiuae/Falcon-Perception
