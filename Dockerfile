@@ -42,6 +42,8 @@ COPY --from=uv /uv /usr/local/bin/uv
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
+    python3-dev \
+    build-essential \
     ca-certificates \
     libglib2.0-0 \
     libgl1 \
