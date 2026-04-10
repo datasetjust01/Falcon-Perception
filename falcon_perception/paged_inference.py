@@ -1298,7 +1298,7 @@ class PagedInferenceEngine:
                 seq.original_image_size = (pil_img.height, pil_img.width)
             # Resize if necessary
             img = resize_image_if_necessary(pil_img, seq.min_image_size, seq.max_image_size)
-            seq.image_hash = int.from_bytes(hashlib.sha256(img.tobytes()).digest()[:8])
+            seq.image_hash = int.from_bytes(hashlib.sha256(img.tobytes()).digest()[:8], byteorder="big")
             images = [img]
         else:
             images = []
